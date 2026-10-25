@@ -1,0 +1,32 @@
+name: Source-to-npm release equivalence qualification
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Checkout reviewed comparison tool
+        uses: actions/checkout@v4
+        with:
+          ref: audit-verify-npm-release-20261025
+          persist-credentials: false
+          path: audit
+      - name: Unit tests with synthetic tar archives (no scripts)
+        run: node --test audit/tools/verify-npm-release.test.mjs
+      - name: Checkout exact upstream release tag
+        uses: actions/checkout@v4
+        with:
+          repository: bitcoinjs/bitcoinjs-lib
+          ref: v7.0.1
+          fetch-depth: 0
+          persist-credentials: false
+          path: release
+      - name: Verify npm published package against tagged source
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd release
+          node ../audit/tools/verify-npm-release.mjs 7.0.1
